@@ -70,8 +70,10 @@ console.log(req.body)
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
-
-    const discount = await Discount.create({
+    if (amount > product.sale_price) {
+  return res.status(400).json({ message: "Discount cannot be greater than product sale price" });
+}
+const discount = await Discount.create({
       type,
       description,
       startDate,
@@ -84,7 +86,7 @@ console.log(req.body)
     res.json({ message: "Discount added successfully", discount });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "internal server error" });
   }
 });
 
@@ -108,12 +110,14 @@ app.get('/discounts', async (req, res) => {
 app.get('/products-basic', async (req, res) => {
   try {
     const products = await Product.findAll({
-      attributes: [ 'name', 'code']  // ✅ Only send required fields
+      attributes: ['name', 'code']  // Only send required fields
     });
     res.json(products);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "internal server error" });
+  } // ✅ close catch block
+}); // ✅ close the app.get function
     
 app.get('/getProducts', async (req, res) => {
   try {
@@ -365,7 +369,6 @@ app.get("/getProfile", async (req, res) => {
   try {
     const profile = await ShopProfile.findOne(); 
     if (!profile) return res.json(null);
-    console.log(profile)
     res.json({
       shopName: profile.shop_name,
       number1: profile.number1,
@@ -382,7 +385,6 @@ app.get("/getProfileName", async (req, res) => {
   try {
     const profile = await ShopProfile.findOne(); 
     if (!profile) return res.json(null);
-    console.log(profile)
     res.json({
       shopName: profile.shop_name,
       });
@@ -440,7 +442,29 @@ app.get('/getproductdetail/:barcode', async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+app.put('/editDiscountStatus', async (req, res) => {
+  const { id, newStatus } = req.body;
+  console.log({id ,newStatus})
 
+  try {
+    const discount = await Discount.findByPk(id);
+    console.log(discount.status)
+
+    if (!discount) {
+      return res.status(404).json({ message: "Discount not found" });
+    }
+    if (discount.status === newStatus) {
+      return res.json({ message: "Status unchanged" });
+    }
+
+    await discount.update({ status: newStatus });
+
+    res.json({ message: "Discount status updated", discount });
+  } catch (err) {
+    console.error("Error updating discount status:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 app.listen(port, () => {
   console.log(`🚀 Server running on http://localhost:${port}`);
 });

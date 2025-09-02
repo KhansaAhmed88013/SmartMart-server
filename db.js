@@ -93,7 +93,7 @@ const Discount = sequelize.define('Discount', {
   startDate: { type: DataTypes.DATEONLY, allowNull: false },
   endDate: { type: DataTypes.DATEONLY, allowNull: false },
   amount: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
-  status: { type: DataTypes.ENUM('Active', 'Expired'), defaultValue: 'Active' },
+  status: { type: DataTypes.ENUM('Active', 'Inactive'), defaultValue: 'Active' },
 }, {
   tableName: 'discounts',
   timestamps: true,
@@ -216,7 +216,7 @@ const connectAndSync = async () => {
     console.log('✅ Database connected');
 
    
-    await sequelize.sync({ alter: true }); // auto update tables
+    await sequelize.sync();
     console.log('✅ Tables synced');
     // Insert default "Cash" customer if not exists
     const [cashCustomer, created] = await Customer.findOrCreate({
