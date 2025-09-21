@@ -1,5 +1,5 @@
 
-const { connectAndSync, Product,Supplier,Category,Invoice,InvoiceItem,ShopProfile,Discount } = require('./db');
+const { connectAndSync, Product,Supplier,Category,Invoice,Customer,InvoiceItem,ShopProfile,Discount } = require('./db');
 const cors = require('cors'); 
 const express = require('express');
 
@@ -11,7 +11,9 @@ app.use(express.json());
 
 // ✅ Connect to DB and sync tables
 connectAndSync();
-
+app.get('/', (req, res) => {
+  res.send('✅ API is working!');
+});
 // ========================
 // 📌 Add Single Product
 // ========================
@@ -56,6 +58,87 @@ app.post('/addProducts', async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+// ========================
+// 📌 Add Customer
+// ========================
+app.post('/addCustomer', async (req, res) => {
+  try {
+    const { name, phone, address, balance } = req.body;
+
+    // Check required field
+    if (!name) {
+      return res.status(400).json({ message: "Customer name is required" });
+    }
+
+    // Create new customer
+    const newCustomer = await Customer.create({
+      name,
+      phone,
+      address,
+      balance: balance || 0.00   // اگر نہ دیں تو default 0 ہوگا
+    });
+
+    res.status(201).json({ 
+      message: "Customer added successfully", 
+      customer: newCustomer 
+    });
+  } catch (error) {
+    console.error("Error adding customer:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+// 📌 Get all customers
+app.get('/getCustomers', async (req, res) => {
+  try {
+    const customers = await Customer.findAll();
+    res.json(customers);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+// 📌 Delete Customer
+app.delete('/delCustomer/:id', async (req, res) => {
+  try {
+    const customer = await Customer.findByPk(req.params.id);
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    await customer.destroy();
+    res.json({ message: `Customer '${customer.name}' deleted successfully` });
+  } catch (error) {
+    console.error("Error deleting customer:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+// 📌 Update Customer
+app.put('/updateCustomer', async (req, res) => {
+  try {
+    const { id, name, phone, address, balance } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ message: "Customer ID is required" });
+    }
+
+    const customer = await Customer.findByPk(id);
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    await customer.update({
+      name: name || customer.name,
+      phone: phone || customer.phone,
+      address: address || customer.address,
+      balance: balance !== undefined ? balance : customer.balance
+    });
+
+    res.json({ message: "Customer updated successfully", customer });
+  } catch (error) {
+    console.error("Error updating customer:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 
 
 // ========================
@@ -251,6 +334,7 @@ app.delete('/delSupplier/:id',async(req,res)=>{
   }
 })
 
+
 //Categories
 app.post('/addCategory',async(req,res)=>{
   const {name}=req.body
@@ -330,22 +414,40 @@ app.get('/getCategoryNsuppliers', async (req, res) => {
 
 
 //billing
-app.post('/addInvoice',async(req,res)=>{
-  const {invoice,items}=req.body
-  try{
-    const invoiceadded=await Invoice.create(invoice)
-    for(let i=0;i<items.length;++i){
-      const product = await Product.findOne({ where: { code: items[i].product_code } });
-  if (!product) {
-    return res.status(400).json({ message: `Product code ${items[i].product_code} not found` });
+// 📌 Add Invoice
+app.post('/addInvoice', async (req, res) => {
+  try {
+    const { invoice, items } = req.body;
+
+    if (!invoice || !items || !items.length) {
+      return res.status(400).json({ message: "Invoice and items are required" });
+    }
+
+    // Create invoice
+    const newInvoice = await Invoice.create(invoice);
+
+    // Create items linked to invoice
+    for (const item of items) {
+      await InvoiceItem.create({
+        ...item,
+        invoice_id: newInvoice.id
+      });
+
+      // Deduct stock
+      if (item.product_code) {
+        const product = await Product.findOne({ where: { code: item.product_code } });
+        if (product) {
+          await product.update({ qty: product.qty - item.quantity });
+        }
+      }
+    }
+
+    res.json({ message: "Invoice created successfully", invoice: newInvoice });
+  } catch (error) {
+    console.error("Error adding invoice:", error);
+    res.status(500).json({ message: error.message });
   }
-  await InvoiceItem.create({ ...items[i], invoice_id: invoiceadded.id, product_id: product.id });
-}
-    res.json("created")
-  }catch(error){
-    res.status(500).json({message:error.message})
-  }
-})
+});
 
 app.get('/getInvoiceNo', async (req, res) => {
   try {

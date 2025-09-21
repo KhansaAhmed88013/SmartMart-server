@@ -108,8 +108,6 @@ const Customer = sequelize.define('Customer', {
   name: { type: DataTypes.STRING(100), allowNull: false },
   phone: { type: DataTypes.STRING(20) },
   address: { type: DataTypes.TEXT },
-
-  // 💰 customer balance can grow
   balance: { type: DataTypes.DECIMAL(18,2), defaultValue: 0.00 }
 }, {
   tableName: 'customers',
@@ -132,10 +130,9 @@ const Invoice = sequelize.define('Invoice', {
   invoice_date: { type: DataTypes.DATE, defaultValue: Sequelize.NOW },
   remarks: { type: DataTypes.STRING(255) },
   discount: { type: DataTypes.DECIMAL(18,2), defaultValue: 0.00 },
-  tax_percent: { type: DataTypes.DECIMAL(8,4), defaultValue: 0.0000 }, // more precision for tax %
+  tax_percent: { type: DataTypes.DECIMAL(8,4), defaultValue: 0.0000 },
   final_total: { type: DataTypes.DECIMAL(18,2), defaultValue: 0.00 },
   paid_amount: { type: DataTypes.DECIMAL(18,2), defaultValue: 0.00 },
-
   is_return: { type: DataTypes.BOOLEAN, defaultValue: false }
 }, {
   tableName: 'invoices',
@@ -143,6 +140,7 @@ const Invoice = sequelize.define('Invoice', {
   createdAt: 'created_at',
   updatedAt: 'updated_at',
 });
+
 // =======================
 // Invoice Items Model
 // =======================
@@ -216,7 +214,7 @@ const connectAndSync = async () => {
     console.log('✅ Database connected');
 
    
-    await sequelize.sync();
+    await sequelize.sync({alter:true});
     console.log('✅ Tables synced');
     // Insert default "Cash" customer if not exists
     const [cashCustomer, created] = await Customer.findOrCreate({
