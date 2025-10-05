@@ -100,7 +100,11 @@ const Product = sequelize.define(
   'Product',
   {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-    code: { type: DataTypes.STRING(20), allowNull: false, unique: true },
+    code: {
+  type: DataTypes.STRING(20),
+  allowNull: false,
+  unique: true
+},
     name: { type: DataTypes.STRING(255), allowNull: false },
     cost_price: { type: DataTypes.DECIMAL(65, 2), defaultValue: 0.00 },
     qty: { type: DataTypes.DECIMAL(65, 0), defaultValue: 0 }, // snapshot
@@ -256,7 +260,6 @@ const Invoice = sequelize.define(
   {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     account_id: { type: DataTypes.STRING(50) },
-    cashier_name: { type: DataTypes.STRING(100) },
     payment_method: {
       type: DataTypes.ENUM('Cash Sale', 'Credit Card', 'Credit Customer'),
       defaultValue: 'Cash Sale'
@@ -264,7 +267,7 @@ const Invoice = sequelize.define(
     invoice_date: { type: DataTypes.DATE, defaultValue: Sequelize.NOW },
     remarks: { type: DataTypes.STRING(255) },
     discount: { type: DataTypes.DECIMAL(65, 2), defaultValue: 0.00 },
-    tax_percent: { type: DataTypes.DECIMAL(18, 3), defaultValue: 0.000 },
+    tax_percent: { type: DataTypes.DECIMAL(3), defaultValue: 0 },
     final_total: { type: DataTypes.DECIMAL(65, 2), defaultValue: 0.00 },
     paid_amount: { type: DataTypes.DECIMAL(65, 2), defaultValue: 0.00 },
     is_return: { type: DataTypes.BOOLEAN, defaultValue: false }
@@ -283,10 +286,12 @@ const InvoiceItem = sequelize.define(
   {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     price: { type: DataTypes.DECIMAL(65, 2) },
-    quantity: { type: DataTypes.DECIMAL(65, 2) },
-    return_qty: { type: DataTypes.DECIMAL(65, 2), defaultValue: 0.00 },
-    tax_percent: { type: DataTypes.DECIMAL(18, 3), defaultValue: 0.000 },
-      cost_price: { type: DataTypes.DECIMAL(65,2), defaultValue: 0.00 } // new field
+    quantity: { type: DataTypes.DECIMAL(18, 2) },
+    return_qty: { type: DataTypes.DECIMAL(18, 2), defaultValue: 0.00 },
+    tax_percent: { type: DataTypes.DECIMAL(3), defaultValue: 0 },
+    total_amount:{type:DataTypes.DECIMAL(18,2),defaultValue:0.00},
+    cost_price: { type: DataTypes.DECIMAL(65,2), defaultValue: 0.00 }, // new field
+    total_discount :{ type: DataTypes.DECIMAL(65, 2) }
 
   },
   {
@@ -437,6 +442,18 @@ const Unit = sequelize.define("Unit", {
 Product.belongsTo(Unit, { foreignKey: 'unit_id', as: 'unitDetails' });
 Unit.hasMany(Product, { foreignKey: 'unit_id', as: 'products' });
 
+const Notification = sequelize.define("Notification", {
+  id: { type: Sequelize.INTEGER, autoIncrement: true, primaryKey: true },
+  type: { type: Sequelize.STRING },  // e.g., "login", "logout", "sale"
+  message: { type: Sequelize.STRING }, 
+  user_id: { type: Sequelize.INTEGER }, // which user triggered this
+  is_read: { type: Sequelize.BOOLEAN, defaultValue: false }
+});
+
+User.hasMany(Notification, { foreignKey: "user_id" });
+Notification.belongsTo(User, { foreignKey: "user_id" });
+
+
 // =======================
 // Stock Ledger Utility
 // =======================
@@ -491,9 +508,9 @@ const connectAndSync = async () => {
     await sequelize.authenticate();
     console.log("✅ Database connected");
 
-   
-    await sequelize.sync({alter:true});
-    console.log('✅ Tables synced');
+    await sequelize.sync();
+    console.log("✅ Tables synced");
+
     // Insert default "Cash" customer if not exists
     const [cashCustomer, created] = await Customer.findOrCreate({
       where: { name: "Cash" },
@@ -524,6 +541,21 @@ const connectAndSync = async () => {
     } else {
       console.log("ℹ️ Default Admin user already exists");
     }
+
+    // ✅ Insert default Units if not exists
+    const defaultUnits = ["kg", "pcs", "L"];
+
+    for (const unitName of defaultUnits) {
+      const [unit, created] = await Unit.findOrCreate({
+        where: { name: unitName }
+      });
+      if (created) {
+        console.log(`✅ Default unit created: ${unitName}`);
+      } else {
+        console.log(`ℹ️ Unit already exists: ${unitName}`);
+      }
+    }
+
   } catch (err) {
     console.error("❌ Database connection error:", err);
   }
@@ -546,6 +578,7 @@ module.exports = {
   User,
   CategoryDiscount,
   Unit,
+  Notification,
   recordLedger,
   getLastBalance
 };
