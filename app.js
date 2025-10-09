@@ -2203,11 +2203,11 @@ app.post("/getRecoveryEmail", async (req, res) => {
         role: { [Op.like]: role },
       },
     });
-
+    console.log(user);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    console.log(user.email);
+  
 
     res.json({ email: user.email });
   } catch (err) {
