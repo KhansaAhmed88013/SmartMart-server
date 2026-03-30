@@ -384,14 +384,14 @@ const connectAndSync = async () => {
     console.log(created ? "✅ Default Cash customer created" : "ℹ️ Cash customer already exists");
 
     // 🔑 Insert default Admin user if not exists
-    const defaultUsername = "khansa";
-    const defaultPassword = "12345";
+    const defaultUsername = "MartAdmin";
+    const defaultPassword = "admin12345";
     const existingUser = await User.findOne({ where: { username: defaultUsername } });
 
     if (!existingUser) {
       const hashedPassword = await bcrypt.hash(defaultPassword, 10);
-      await User.create({ username: defaultUsername, password: hashedPassword, full_name: "khansa ahmed", role: "Admin", status: "Active",email:"khansa88013@gmail.com" });
-      console.log("✅ Default Admin user created (username: khansa / password: 12345)");
+      await User.create({ username: defaultUsername, password: hashedPassword, full_name: "Mart Admin", role: "Admin", status: "Active",email:"khansa88013@gmail.com" });
+      console.log("✅ Default Admin user created (username: MartAdmin / password: admin12345)");
     } else {
       console.log("ℹ️ Default Admin user already exists");
     }
