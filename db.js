@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const { Sequelize, DataTypes } = require('sequelize');
+require('dotenv').config();
 
 // =======================
 // Database Connection
