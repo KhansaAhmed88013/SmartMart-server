@@ -29,9 +29,10 @@ DB_HOST=localhost
 DB_PORT=3306
 MY_EMAIL=your-email@example.com
 MY_PASSWORD=your-app-password
+ALLOWED_ORIGINS=https://smart-mart-client.vercel.app,http://localhost:3000
 DEFAULT_ADMIN_USERNAME=MartAdmin
 DEFAULT_ADMIN_PASSWORD=admin12345
-DEFAULT_ADMIN_EMAIL=khansa88013@gmail.com
+DEFAULT_ADMIN_EMAIL=your-email@gmail.com
 ```
 
 Notes:

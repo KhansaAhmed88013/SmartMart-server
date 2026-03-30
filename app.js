@@ -8,7 +8,29 @@ const mvcRoutes = require("./src/routes");
 const app = express();
 const port = process.env.PORT || 5000;
 
-app.use(cors());
+const allowedOrigins = (
+  process.env.ALLOWED_ORIGINS ||
+  "https://smart-mart-client.vercel.app,http://localhost:3000"
+)
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests from non-browser clients (Postman/curl) without Origin header.
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // ========================
